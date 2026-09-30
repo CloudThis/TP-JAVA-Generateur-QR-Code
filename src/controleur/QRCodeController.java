@@ -2,11 +2,11 @@ package controleur;
 
 import modele.PDFService;
 import modele.QRCodeModel;
+import modele.QRCodeService;
 import vue.QRcodesaisi;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 
 public class QRCodeController {
     private final QRCodeModel model;
@@ -16,27 +16,35 @@ public class QRCodeController {
         this.model = model;
         this.view = view;
 
-        this.view.addGenerateListener(e -> {
-            String saisie = view.getInputText();
-            if (saisie.isEmpty()) {
-                view.setStatusMessage("Erreur : Veuillez saisir un texte.");
-            } else {
-                model.setTexteOuLien(saisie);
-            }
-        });
+        this.view.addGenerateListener(e -> genererQRCode());
 
         this.view.addExportListener(e -> exporterPDF());
 
         this.model.addPropertyChangeListener(evt -> {
-            if ("texteOuLien".equals(evt.getPropertyName())) {
-                view.setStatusMessage("Donnée enregistrée : " + evt.getNewValue());
+            if ("qrCodeData".equals(evt.getPropertyName())) {
+                this.view.setQRCodeImage(this.model.getQrCodeImage());
             }
         });
     }
 
+    private void genererQRCode() {
+        String texte = view.getInputText();
+        if (texte.isEmpty()) {
+            view.setStatusMessage("Erreur : Veuillez saisir un texte ou un lien.");
+            return;
+        }
+
+        try {
+            BufferedImage image = QRCodeService.genererQRCode(texte, 200, 200);
+            model.setQrCodeData(texte, image);
+        } catch (Exception ex) {
+            view.setStatusMessage("Erreur lors de la génération du QR Code.");
+        }
+    }
+
     private void exporterPDF() {
-        if (model.getTexteOuLien() == null || model.getTexteOuLien().isEmpty()) {
-            view.setStatusMessage("Erreur : Aucun contenu à exporter.");
+        if (model.getQrCodeImage() == null) {
+            view.setStatusMessage("Erreur : Veuillez générer un QR Code avant d'exporter.");
             return;
         }
 
@@ -49,10 +57,10 @@ public class QRCodeController {
             if (!chemin.endsWith(".pdf")) chemin += ".pdf";
 
             try {
-                PDFService.exporterPDF(chemin, model.getTexteOuLien());
+                PDFService.exporterPDF(chemin, model.getTexteOuLien(), model.getQrCodeImage());
                 view.setStatusMessage("PDF généré avec succès !");
             } catch (Exception ex) {
-                view.setStatusMessage("Erreur lors de la génération du PDF.");
+                view.setStatusMessage("Erreur lors de l'exportation du PDF.");
             }
         }
     }

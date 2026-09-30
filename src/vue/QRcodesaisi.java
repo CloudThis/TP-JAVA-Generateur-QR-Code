@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 
 public class QRcodesaisi extends JFrame {
     private JPanel mainPanel;
@@ -48,5 +49,10 @@ public class QRcodesaisi extends JFrame {
 
     public void addExportListener(ActionListener listener) {
         exportButton.addActionListener(listener);
+    }
+
+    public void setQRCodeImage(BufferedImage image) {
+        qrCodeDisplayLabel.setText("");
+        qrCodeDisplayLabel.setIcon(new ImageIcon(image));
     }
 }
