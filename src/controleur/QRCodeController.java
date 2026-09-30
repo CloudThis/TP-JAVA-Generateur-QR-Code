@@ -1,8 +1,10 @@
 package controleur;
 
+import modele.PDFService;
 import modele.QRCodeModel;
 import vue.QRcodesaisi;
 
+import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -14,24 +16,43 @@ public class QRCodeController {
         this.model = model;
         this.view = view;
 
-        this.view.addGenerateListener(new GenererAction());
+        this.view.addGenerateListener(e -> {
+            String saisie = view.getInputText();
+            if (saisie.isEmpty()) {
+                view.setStatusMessage("Erreur : Veuillez saisir un texte.");
+            } else {
+                model.setTexteOuLien(saisie);
+            }
+        });
+
+        this.view.addExportListener(e -> exporterPDF());
 
         this.model.addPropertyChangeListener(evt -> {
             if ("texteOuLien".equals(evt.getPropertyName())) {
-                String texte = (String) evt.getNewValue();
-                this.view.setStatusMessage("Donnée validée : " + texte);
+                view.setStatusMessage("Donnée enregistrée : " + evt.getNewValue());
             }
         });
     }
 
-    private class GenererAction implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            String saisie = view.getInputText();
-            if (saisie.isEmpty()) {
-                view.setStatusMessage("Erreur : Veuillez saisir un texte ou un lien.");
-            } else {
-                model.setTexteOuLien(saisie);
+    private void exporterPDF() {
+        if (model.getTexteOuLien() == null || model.getTexteOuLien().isEmpty()) {
+            view.setStatusMessage("Erreur : Aucun contenu à exporter.");
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Enregistrer le fichier PDF");
+        int userSelection = fileChooser.showSaveDialog(view);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            String chemin = fileChooser.getSelectedFile().getAbsolutePath();
+            if (!chemin.endsWith(".pdf")) chemin += ".pdf";
+
+            try {
+                PDFService.exporterPDF(chemin, model.getTexteOuLien());
+                view.setStatusMessage("PDF généré avec succès !");
+            } catch (Exception ex) {
+                view.setStatusMessage("Erreur lors de la génération du PDF.");
             }
         }
     }
@@ -40,7 +61,6 @@ public class QRCodeController {
         QRCodeModel model = new QRCodeModel();
         QRcodesaisi view = new QRcodesaisi();
         new QRCodeController(model, view);
-
         view.setVisible(true);
     }
 }
