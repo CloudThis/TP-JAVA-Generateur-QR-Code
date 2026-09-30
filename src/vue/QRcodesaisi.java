@@ -11,6 +11,7 @@ public class QRcodesaisi extends JFrame {
     private JTextField inputTextField;
     private JButton generateButton;
     private JLabel qrCodeDisplayLabel;
+    private JButton exportButton;
 
     public QRcodesaisi() {
         try {
@@ -43,5 +44,9 @@ public class QRcodesaisi extends JFrame {
     public void setStatusMessage(String message) {
         qrCodeDisplayLabel.setIcon(null);
         qrCodeDisplayLabel.setText(message);
+    }
+
+    public void addExportListener(ActionListener listener) {
+        exportButton.addActionListener(listener);
     }
 }
