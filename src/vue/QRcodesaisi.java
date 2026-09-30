@@ -55,4 +55,12 @@ public class QRcodesaisi extends JFrame {
         qrCodeDisplayLabel.setText("");
         qrCodeDisplayLabel.setIcon(new ImageIcon(image));
     }
+
+    public void afficherErreur(String titre, String message) {
+        JOptionPane.showMessageDialog(this, message, titre, JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void afficherInformation(String titre, String message) {
+        JOptionPane.showMessageDialog(this, message, titre, JOptionPane.INFORMATION_MESSAGE);
+    }
 }

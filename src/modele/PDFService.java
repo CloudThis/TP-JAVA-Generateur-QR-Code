@@ -1,6 +1,7 @@
 package modele;
 
 import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Paragraph;
@@ -9,13 +10,19 @@ import com.itextpdf.text.pdf.PdfWriter;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class PDFService {
 
-    public static void exporterPDF(String cheminFichier, String contenu, BufferedImage qrImage) throws Exception {
+    public static void exporterPDF(String cheminFichier, String contenu, BufferedImage qrImage)
+            throws FileNotFoundException, DocumentException, IOException {
+
         Document document = new Document();
-        PdfWriter.getInstance(document, new FileOutputStream(cheminFichier));
+
+        FileOutputStream fos = new FileOutputStream(cheminFichier);
+        PdfWriter.getInstance(document, fos);
 
         document.open();
 
