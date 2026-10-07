@@ -22,6 +22,9 @@ public class QRcodesaisi extends JFrame {
     private JSpinner heightSpinner;
     private JComboBox<String> alignComboBox;
 
+    private JProgressBar progressBar;
+    private JLabel statusLabel;
+
     private JMenuItem itemSauvegarderProjet;
     private JMenuItem itemChargerProjet;
     private JMenuItem itemSauvegarderProfil;
@@ -33,16 +36,17 @@ public class QRcodesaisi extends JFrame {
             SwingUtilities.updateComponentTreeUI(this);
         } catch (Exception ignored) {}
 
-        setTitle("Générateur de QR Code - Projets & Profils");
+        setTitle("Générateur de QR Code");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         creerMenu();
         initCustomComponents();
+        configurerTooltips();
 
         setContentPane(mainPanel);
-        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        mainPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        setMinimumSize(new Dimension(600, 480));
+        setMinimumSize(new Dimension(620, 520));
         pack();
         setLocationRelativeTo(null);
 
@@ -92,10 +96,49 @@ public class QRcodesaisi extends JFrame {
         imageOptionPanel.add(new JLabel("Alignement :"));
         imageOptionPanel.add(alignComboBox);
 
+        JPanel bottomBar = new JPanel(new BorderLayout(10, 0));
+        bottomBar.setBorder(new EmptyBorder(5, 0, 0, 0));
+
+        statusLabel = new JLabel("Prêt");
+        statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+
+        progressBar = new JProgressBar();
+        progressBar.setStringPainted(true);
+        progressBar.setVisible(false);
+        progressBar.setPreferredSize(new Dimension(140, 18));
+
+        bottomBar.add(statusLabel, BorderLayout.CENTER);
+        bottomBar.add(progressBar, BorderLayout.EAST);
+
+        JPanel southContainer = new JPanel(new BorderLayout());
+        southContainer.add(imageOptionPanel, BorderLayout.NORTH);
+        southContainer.add(bottomBar, BorderLayout.SOUTH);
+
         if (mainPanel == null) {
             mainPanel = new JPanel(new BorderLayout());
         }
-        mainPanel.add(imageOptionPanel, BorderLayout.SOUTH);
+        mainPanel.add(southContainer, BorderLayout.SOUTH);
+    }
+
+    private void configurerTooltips() {
+        inputTextField.setToolTipText("Entrez une URL (ex: https://example.com) ou du texte brut");
+        generateButton.setToolTipText("Créer le QR Code à partir du texte saisi");
+        exportButton.setToolTipText("Exporter le résultat dans un document PDF personnalisé");
+        selectImageButton.setToolTipText("Ajouter un logo ou une illustration dans le PDF");
+        widthSpinner.setToolTipText("Largeur de l'image insérée dans le PDF (en px)");
+        heightSpinner.setToolTipText("Hauteur de l'image insérée dans le PDF (en px)");
+        alignComboBox.setToolTipText("Positionnement de l'image dans le document");
+    }
+
+    public void demarrerChargement(String message) {
+        setStatusMessage(message, false);
+        progressBar.setIndeterminate(true);
+        progressBar.setVisible(true);
+    }
+
+    public void arreterChargement() {
+        progressBar.setIndeterminate(false);
+        progressBar.setVisible(false);
     }
 
     public String getInputText() { return inputTextField.getText().trim(); }
@@ -120,9 +163,9 @@ public class QRcodesaisi extends JFrame {
     public void addSauvegarderProfilListener(ActionListener l) { itemSauvegarderProfil.addActionListener(l); }
     public void addChargerProfilListener(ActionListener l) { itemChargerProfil.addActionListener(l); }
 
-    public void setStatusMessage(String message) {
-        qrCodeDisplayLabel.setIcon(null);
-        qrCodeDisplayLabel.setText(message);
+    public void setStatusMessage(String message, boolean estErreur) {
+        statusLabel.setText(message);
+        statusLabel.setForeground(estErreur ? new Color(180, 0, 0) : new Color(0, 120, 0));
     }
 
     public void setQRCodeImage(BufferedImage image) {

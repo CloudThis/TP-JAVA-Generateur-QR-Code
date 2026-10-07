@@ -26,14 +26,13 @@ public class QRCodeController {
 
         this.view.addSauvegarderProjetListener(e -> sauvegarderProjet());
         this.view.addChargerProjetListener(e -> chargerProjet());
-
         this.view.addSauvegarderProfilListener(e -> sauvegarderProfil());
         this.view.addChargerProfilListener(e -> chargerProfil());
 
         this.model.addPropertyChangeListener(evt -> {
             if ("qrCodeData".equals(evt.getPropertyName())) {
                 this.view.setQRCodeImage(this.model.getQrCodeImage());
-                this.view.setStatusMessage("QR Code généré avec succès.");
+                this.view.setStatusMessage("QR Code généré avec succès.", false);
             }
         });
     }
@@ -47,26 +46,103 @@ public class QRCodeController {
             File selectedFile = chooser.getSelectedFile();
             model.setImagePath(selectedFile.getAbsolutePath());
             view.setImagePathText(selectedFile.getName());
+            view.setStatusMessage("Image sélectionnée : " + selectedFile.getName(), false);
         }
     }
 
     private void genererQRCode() {
         String texte = view.getInputText();
         if (texte.isEmpty()) {
-            view.setStatusMessage("Erreur : Champ vide.");
-            view.afficherErreur("Saisie invalide", "Veuillez saisir un texte ou une URL.");
+            view.setStatusMessage("Saisie invalide : le champ est vide.", true);
+            view.afficherErreur("Saisie invalide", "Veuillez saisir un texte ou une URL avant de générer.");
             return;
         }
 
-        try {
-            BufferedImage image = QRCodeService.genererQRCode(texte, 200, 200);
-            model.setQrCodeData(texte, image);
-        } catch (Exception ex) {
-            view.setStatusMessage("Erreur lors de la génération.");
-            view.afficherErreur("Erreur QR Code", ex.getMessage());
-        }
+        view.demarrerChargement("Génération du QR Code en cours...");
+
+        SwingWorker<BufferedImage, Void> worker = new SwingWorker<>() {
+            @Override
+            protected BufferedImage doInBackground() throws Exception {
+                return QRCodeService.genererQRCode(texte, 250, 250);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    BufferedImage image = get();
+                    model.setQrCodeData(texte, image);
+                } catch (Exception ex) {
+                    view.setStatusMessage("Erreur lors de la génération.", true);
+                    view.afficherErreur("Erreur de Génération", "Impossible de créer le QR Code : " + ex.getCause().getMessage());
+                } finally {
+                    view.arreterChargement();
+                }
+            }
+        };
+        worker.execute();
     }
 
+    private void exporterPDF() {
+        if (model.getQrCodeImage() == null) {
+            view.setStatusMessage("Export impossible : aucun QR Code.", true);
+            view.afficherErreur("Export PDF", "Veuillez d'abord générer un QR Code.");
+            return;
+        }
+
+        model.setImageWidth(view.getImageWidth());
+        model.setImageHeight(view.getImageHeight());
+        model.setImageAlignment(view.getImageAlignment());
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Enregistrer le fichier PDF");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Document PDF (*.pdf)", "pdf"));
+
+        if (fileChooser.showSaveDialog(view) == JFileChooser.APPROVE_OPTION) {
+            String path = fileChooser.getSelectedFile().getAbsolutePath();
+            if (!path.toLowerCase().endsWith(".pdf")) {
+                path += ".pdf";
+            }
+
+            final String finalPath = path;
+            view.demarrerChargement("Création du fichier PDF en cours...");
+
+            SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Boolean doInBackground() throws Exception {
+                    PDFService.exporterPDF(
+                            finalPath,
+                            model.getTexteOuLien(),
+                            model.getQrCodeImage(),
+                            model.getImagePath(),
+                            model.getImageWidth(),
+                            model.getImageHeight(),
+                            model.getImageAlignment(),
+                            model.getProfil()
+                    );
+                    return true;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        view.setStatusMessage("Document PDF exporté avec succès.", false);
+                        view.afficherInformation("Succès", "Le fichier PDF a été sauvegardé dans :\n" + finalPath);
+                    } catch (Exception ex) {
+                        view.setStatusMessage("Échec de l'exportation PDF.", true);
+                        if (ex.getCause() instanceof FileNotFoundException) {
+                            view.afficherErreur("Fichier verrouillé", "Impossible d'écrire dans ce fichier. Vérifiez qu'il n'est pas déjà ouvert.");
+                        } else {
+                            view.afficherErreur("Erreur PDF", "Erreur lors de la génération : " + ex.getCause().getMessage());
+                        }
+                    } finally {
+                        view.arreterChargement();
+                    }
+                }
+            };
+            worker.execute();
+        }
+    }
 
     private void sauvegarderProjet() {
         JFileChooser fileChooser = new JFileChooser();
@@ -87,8 +163,10 @@ public class QRCodeController {
 
             try {
                 ProjetService.sauvegarderObjet(path, data);
+                view.setStatusMessage("Projet sauvegardé.", false);
                 view.afficherInformation("Projet", "Le projet a été sauvegardé avec succès !");
             } catch (IOException ex) {
+                view.setStatusMessage("Erreur de sauvegarde.", true);
                 view.afficherErreur("Erreur Sauvegarde", "Impossible de sauvegarder le projet : " + ex.getMessage());
             }
         }
@@ -115,13 +193,14 @@ public class QRCodeController {
                     genererQRCode();
                 }
 
+                view.setStatusMessage("Projet chargé.", false);
                 view.afficherInformation("Projet", "Projet chargé avec succès !");
             } catch (Exception ex) {
-                view.afficherErreur("Erreur Chargement", "Impossible de charger le fichier projet : " + ex.getMessage());
+                view.setStatusMessage("Erreur de chargement.", true);
+                view.afficherErreur("Erreur Chargement", "Impossible de charger le projet : " + ex.getMessage());
             }
         }
     }
-
 
     private void sauvegarderProfil() {
         JFileChooser fileChooser = new JFileChooser();
@@ -134,9 +213,11 @@ public class QRCodeController {
 
             try {
                 ProjetService.sauvegarderObjet(path, model.getProfil());
-                view.afficherInformation("Profil", "Le profil de style a été sauvegardé avec succès !");
+                view.setStatusMessage("Profil sauvegardé.", false);
+                view.afficherInformation("Profil", "Le profil de style a été sauvegardé !");
             } catch (IOException ex) {
-                view.afficherErreur("Erreur Sauvegarde", "Impossible de sauvegarder le profil : " + ex.getMessage());
+                view.setStatusMessage("Erreur de sauvegarde du profil.", true);
+                view.afficherErreur("Erreur", "Impossible de sauvegarder le profil : " + ex.getMessage());
             }
         }
     }
@@ -151,53 +232,11 @@ public class QRCodeController {
             try {
                 ProfilData profil = ProjetService.chargerObjet(path);
                 model.setProfil(profil);
-                view.afficherInformation("Profil", "Le profil de style a été appliqué avec succès !");
+                view.setStatusMessage("Profil de style appliqué.", false);
+                view.afficherInformation("Profil", "Profil appliqué avec succès !");
             } catch (Exception ex) {
-                view.afficherErreur("Erreur Chargement", "Impossible de charger le profil : " + ex.getMessage());
-            }
-        }
-    }
-
-    private void exporterPDF() {
-        if (model.getQrCodeImage() == null) {
-            view.setStatusMessage("Export impossible.");
-            view.afficherErreur("Export PDF", "Veuillez générer un QR Code avant de tenter un export PDF.");
-            return;
-        }
-
-        model.setImageWidth(view.getImageWidth());
-        model.setImageHeight(view.getImageHeight());
-        model.setImageAlignment(view.getImageAlignment());
-
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Enregistrer le fichier PDF");
-        int userSelection = fileChooser.showSaveDialog(view);
-
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            String chemin = fileChooser.getSelectedFile().getAbsolutePath();
-            if (!chemin.toLowerCase().endsWith(".pdf")) {
-                chemin += ".pdf";
-            }
-
-            try {
-                PDFService.exporterPDF(
-                        chemin,
-                        model.getTexteOuLien(),
-                        model.getQrCodeImage(),
-                        model.getImagePath(),
-                        model.getImageWidth(),
-                        model.getImageHeight(),
-                        model.getImageAlignment(),
-                        model.getProfil()
-                );
-                view.setStatusMessage("PDF exporté.");
-                view.afficherInformation("Succès", "Le fichier PDF a été généré avec succès !");
-            } catch (FileNotFoundException ex) {
-                view.setStatusMessage("Erreur d'accès au fichier.");
-                view.afficherErreur("Fichier verrouillé", "Vérifiez que le fichier n'est pas déjà ouvert.");
-            } catch (DocumentException | IOException ex) {
-                view.setStatusMessage("Erreur lors de la création du PDF.");
-                view.afficherErreur("Erreur PDF", "Une erreur est survenue lors de l'écriture du PDF.");
+                view.setStatusMessage("Erreur de chargement du profil.", true);
+                view.afficherErreur("Erreur", "Impossible de charger le profil : " + ex.getMessage());
             }
         }
     }
