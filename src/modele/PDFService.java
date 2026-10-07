@@ -15,10 +15,10 @@ public class PDFService {
 
     private static final BaseColor COLOR_PRIMARY = new BaseColor(30, 58, 138);   // Bleu nuit (#1E3A8A)
     private static final BaseColor COLOR_ACCENT  = new BaseColor(59, 130, 246);  // Bleu vif (#3B82F6)
-    private static final BaseColor COLOR_TEXT    = new BaseColor(31, 41, 55);    // Gris foncé (#1F2937)
     private static final BaseColor COLOR_BG_CARD = new BaseColor(243, 244, 246); // Gris clair (#F3F4F6)
 
-    public static void exporterPDF(String cheminFichier, String contenu, BufferedImage qrImage)
+    public static void exporterPDF(String cheminFichier, String contenu, BufferedImage qrImage,
+                                   String cheminImageExtra, int largeurImg, int hauteurImg, int alignementImg)
             throws FileNotFoundException, DocumentException, IOException {
 
         Document document = new Document(PageSize.A4, 36, 36, 40, 40);
@@ -29,8 +29,6 @@ public class PDFService {
 
         Font fontTitre     = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, COLOR_PRIMARY);
         Font fontSousTitre = FontFactory.getFont(FontFactory.HELVETICA, 11, Font.ITALIC, COLOR_ACCENT);
-        Font fontLabel     = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, COLOR_PRIMARY);
-        Font fontValeur    = FontFactory.getFont(FontFactory.HELVETICA, 11, COLOR_TEXT);
 
         Paragraph titre = new Paragraph("Rapport de Génération QR Code", fontTitre);
         titre.setAlignment(Element.ALIGN_CENTER);
@@ -45,6 +43,33 @@ public class PDFService {
         document.add(line);
         document.add(new Paragraph("\n"));
 
+        if (cheminImageExtra != null && !cheminImageExtra.trim().isEmpty()) {
+            try {
+                Image extraImg = Image.getInstance(cheminImageExtra);
+                extraImg.scaleToFit(largeurImg, hauteurImg);
+
+                switch (alignementImg) {
+                    case 0:
+                        extraImg.setAlignment(Element.ALIGN_LEFT);
+                        break;
+                    case 2:
+                        extraImg.setAlignment(Element.ALIGN_RIGHT);
+                        break;
+                    case 1:
+                    default:
+                        extraImg.setAlignment(Element.ALIGN_CENTER);
+                        break;
+                }
+
+                extraImg.setSpacingAfter(15);
+                document.add(extraImg);
+            } catch (Exception e) {
+                // En cas de problème de lecture de l'image
+                System.err.println("Impossible d'insérer l'image additionnelle : " + e.getMessage());
+            }
+        }
+
+        // 2. Insertion du QR Code dans sa carte
         PdfPTable card = new PdfPTable(1);
         card.setWidthPercentage(85);
 
@@ -54,14 +79,6 @@ public class PDFService {
         cell.setBorderWidth(1.5f);
         cell.setPadding(20);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-        Paragraph pLabel = new Paragraph("Contenu encodé :", fontLabel);
-        pLabel.setSpacingAfter(5);
-        cell.addElement(pLabel);
-
-        Paragraph pValeur = new Paragraph(contenu, fontValeur);
-        pValeur.setSpacingAfter(20);
-        cell.addElement(pValeur);
 
         if (qrImage != null) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

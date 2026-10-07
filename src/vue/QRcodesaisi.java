@@ -14,6 +14,12 @@ public class QRcodesaisi extends JFrame {
     private JLabel qrCodeDisplayLabel;
     private JButton exportButton;
 
+    private JButton selectImageButton;
+    private JLabel imagePathLabel;
+    private JSpinner widthSpinner;
+    private JSpinner heightSpinner;
+    private JComboBox<String> alignComboBox;
+
     public QRcodesaisi() {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -22,16 +28,46 @@ public class QRcodesaisi extends JFrame {
 
         setTitle("Générateur de QR Code");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setContentPane(mainPanel);
 
+        initCustomComponents();
+
+        setContentPane(mainPanel);
         mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        setMinimumSize(new Dimension(450, 200));
+        setMinimumSize(new Dimension(550, 450));
         pack();
         setLocationRelativeTo(null);
 
         Contenu.setText("Texte / URL : ");
         generateButton.setText("Générer");
+    }
+
+    private void initCustomComponents() {
+        selectImageButton = new JButton("Parcourir image...");
+        imagePathLabel = new JLabel("Aucune image sélectionnée");
+
+        widthSpinner = new JSpinner(new SpinnerNumberModel(150, 20, 500, 10));
+        heightSpinner = new JSpinner(new SpinnerNumberModel(150, 20, 500, 10));
+
+        alignComboBox = new JComboBox<>(new String[]{"Gauche", "Centre", "Droite"});
+        alignComboBox.setSelectedIndex(1); // Centre par défaut
+
+        JPanel imageOptionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        imageOptionPanel.setBorder(BorderFactory.createTitledBorder("Image additionnelle PDF"));
+
+        imageOptionPanel.add(selectImageButton);
+        imageOptionPanel.add(imagePathLabel);
+        imageOptionPanel.add(new JLabel("L :"));
+        imageOptionPanel.add(widthSpinner);
+        imageOptionPanel.add(new JLabel("H :"));
+        imageOptionPanel.add(heightSpinner);
+        imageOptionPanel.add(new JLabel("Alignement :"));
+        imageOptionPanel.add(alignComboBox);
+
+        if (mainPanel == null) {
+            mainPanel = new JPanel(new BorderLayout());
+        }
+        mainPanel.add(imageOptionPanel, BorderLayout.SOUTH);
     }
 
     public String getInputText() {
@@ -42,13 +78,33 @@ public class QRcodesaisi extends JFrame {
         generateButton.addActionListener(listener);
     }
 
+    public void addExportListener(ActionListener listener) {
+        exportButton.addActionListener(listener);
+    }
+
+    public void addSelectImageListener(ActionListener listener) {
+        selectImageButton.addActionListener(listener);
+    }
+
+    public void setImagePathText(String path) {
+        imagePathLabel.setText(path);
+    }
+
+    public int getImageWidth() {
+        return (int) widthSpinner.getValue();
+    }
+
+    public int getImageHeight() {
+        return (int) heightSpinner.getValue();
+    }
+
+    public int getImageAlignment() {
+        return alignComboBox.getSelectedIndex(); // 0: Gauche, 1: Centre, 2: Droite
+    }
+
     public void setStatusMessage(String message) {
         qrCodeDisplayLabel.setIcon(null);
         qrCodeDisplayLabel.setText(message);
-    }
-
-    public void addExportListener(ActionListener listener) {
-        exportButton.addActionListener(listener);
     }
 
     public void setQRCodeImage(BufferedImage image) {

@@ -8,7 +8,9 @@ import modele.QRCodeService;
 import vue.QRcodesaisi;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -22,6 +24,7 @@ public class QRCodeController {
 
         this.view.addGenerateListener(e -> genererQRCode());
         this.view.addExportListener(e -> exporterPDF());
+        this.view.addSelectImageListener(e -> choisirImage());
 
         this.model.addPropertyChangeListener(evt -> {
             if ("qrCodeData".equals(evt.getPropertyName())) {
@@ -29,6 +32,19 @@ public class QRCodeController {
                 this.view.setStatusMessage("QR Code généré avec succès.");
             }
         });
+    }
+
+    private void choisirImage() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Choisir une image pour le PDF");
+        chooser.setFileFilter(new FileNameExtensionFilter("Images (JPG, PNG, GIF)", "jpg", "jpeg", "png", "gif"));
+
+        int choice = chooser.showOpenDialog(view);
+        if (choice == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = chooser.getSelectedFile();
+            model.setImagePath(selectedFile.getAbsolutePath());
+            view.setImagePathText(selectedFile.getName());
+        }
     }
 
     private void genererQRCode() {
@@ -59,6 +75,10 @@ public class QRCodeController {
             return;
         }
 
+        model.setImageWidth(view.getImageWidth());
+        model.setImageHeight(view.getImageHeight());
+        model.setImageAlignment(view.getImageAlignment());
+
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Enregistrer le fichier PDF");
         int userSelection = fileChooser.showSaveDialog(view);
@@ -70,7 +90,15 @@ public class QRCodeController {
             }
 
             try {
-                PDFService.exporterPDF(chemin, model.getTexteOuLien(), model.getQrCodeImage());
+                PDFService.exporterPDF(
+                        chemin,
+                        model.getTexteOuLien(),
+                        model.getQrCodeImage(),
+                        model.getImagePath(),
+                        model.getImageWidth(),
+                        model.getImageHeight(),
+                        model.getImageAlignment()
+                );
                 view.setStatusMessage("PDF exporté.");
                 view.afficherInformation("Succès", "Le fichier PDF a été généré avec succès !");
             } catch (FileNotFoundException ex) {
