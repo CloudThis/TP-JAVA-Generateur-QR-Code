@@ -11,17 +11,15 @@ public class QRCodeModel {
     private String imagePath;
     private int imageWidth = 150;
     private int imageHeight = 150;
-    private int imageAlignment = 1; // 0: Gauche, 1: Centre, 2: Droite
+    private int imageAlignment = 1;
+
+    private ProfilData profil = new ProfilData();
 
     private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 
-    public String getTexteOuLien() {
-        return texteOuLien;
-    }
+    public String getTexteOuLien() { return texteOuLien; }
 
-    public BufferedImage getQrCodeImage() {
-        return qrCodeImage;
-    }
+    public BufferedImage getQrCodeImage() { return qrCodeImage; }
 
     public void setQrCodeData(String texte, BufferedImage image) {
         String oldTexte = this.texteOuLien;
@@ -30,36 +28,23 @@ public class QRCodeModel {
         pcs.firePropertyChange("qrCodeData", oldTexte, texte);
     }
 
-    public String getImagePath() {
-        return imagePath;
-    }
+    public String getImagePath() { return imagePath; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
 
-    public void setImagePath(String imagePath) {
-        this.imagePath = imagePath;
-    }
+    public int getImageWidth() { return imageWidth; }
+    public void setImageWidth(int imageWidth) { this.imageWidth = imageWidth; }
 
-    public int getImageWidth() {
-        return imageWidth;
-    }
+    public int getImageHeight() { return imageHeight; }
+    public void setImageHeight(int imageHeight) { this.imageHeight = imageHeight; }
 
-    public void setImageWidth(int imageWidth) {
-        this.imageWidth = imageWidth;
-    }
+    public int getImageAlignment() { return imageAlignment; }
+    public void setImageAlignment(int imageAlignment) { this.imageAlignment = imageAlignment; }
 
-    public int getImageHeight() {
-        return imageHeight;
-    }
-
-    public void setImageHeight(int imageHeight) {
-        this.imageHeight = imageHeight;
-    }
-
-    public int getImageAlignment() {
-        return imageAlignment;
-    }
-
-    public void setImageAlignment(int imageAlignment) {
-        this.imageAlignment = imageAlignment;
+    public ProfilData getProfil() { return profil; }
+    public void setProfil(ProfilData profil) {
+        ProfilData oldProfil = this.profil;
+        this.profil = profil;
+        pcs.firePropertyChange("profil", oldProfil, profil);
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {

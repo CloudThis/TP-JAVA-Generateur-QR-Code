@@ -1,5 +1,7 @@
 package vue;
 
+import modele.ProfilData;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -20,21 +22,27 @@ public class QRcodesaisi extends JFrame {
     private JSpinner heightSpinner;
     private JComboBox<String> alignComboBox;
 
+    private JMenuItem itemSauvegarderProjet;
+    private JMenuItem itemChargerProjet;
+    private JMenuItem itemSauvegarderProfil;
+    private JMenuItem itemChargerProfil;
+
     public QRcodesaisi() {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             SwingUtilities.updateComponentTreeUI(this);
         } catch (Exception ignored) {}
 
-        setTitle("Générateur de QR Code");
+        setTitle("Générateur de QR Code - Projets & Profils");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        creerMenu();
         initCustomComponents();
 
         setContentPane(mainPanel);
         mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        setMinimumSize(new Dimension(550, 450));
+        setMinimumSize(new Dimension(600, 480));
         pack();
         setLocationRelativeTo(null);
 
@@ -42,15 +50,35 @@ public class QRcodesaisi extends JFrame {
         generateButton.setText("Générer");
     }
 
+    private void creerMenu() {
+        JMenuBar menuBar = new JMenuBar();
+
+        JMenu menuFichier = new JMenu("Projet");
+        itemSauvegarderProjet = new JMenuItem("Sauvegarder le Projet");
+        itemChargerProjet = new JMenuItem("Ouvrir un Projet");
+        menuFichier.add(itemSauvegarderProjet);
+        menuFichier.add(itemChargerProjet);
+
+        JMenu menuProfil = new JMenu("Profil / Style");
+        itemSauvegarderProfil = new JMenuItem("Sauvegarder le Profil");
+        itemChargerProfil = new JMenuItem("Charger un Profil");
+        menuProfil.add(itemSauvegarderProfil);
+        menuProfil.add(itemChargerProfil);
+
+        menuBar.add(menuFichier);
+        menuBar.add(menuProfil);
+        setJMenuBar(menuBar);
+    }
+
     private void initCustomComponents() {
         selectImageButton = new JButton("Parcourir image...");
-        imagePathLabel = new JLabel("Aucune image sélectionnée");
+        imagePathLabel = new JLabel("Aucune image");
 
         widthSpinner = new JSpinner(new SpinnerNumberModel(150, 20, 500, 10));
         heightSpinner = new JSpinner(new SpinnerNumberModel(150, 20, 500, 10));
 
         alignComboBox = new JComboBox<>(new String[]{"Gauche", "Centre", "Droite"});
-        alignComboBox.setSelectedIndex(1); // Centre par défaut
+        alignComboBox.setSelectedIndex(1);
 
         JPanel imageOptionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         imageOptionPanel.setBorder(BorderFactory.createTitledBorder("Image additionnelle PDF"));
@@ -70,37 +98,27 @@ public class QRcodesaisi extends JFrame {
         mainPanel.add(imageOptionPanel, BorderLayout.SOUTH);
     }
 
-    public String getInputText() {
-        return inputTextField.getText().trim();
-    }
+    public String getInputText() { return inputTextField.getText().trim(); }
+    public void setInputText(String text) { inputTextField.setText(text); }
 
-    public void addGenerateListener(ActionListener listener) {
-        generateButton.addActionListener(listener);
-    }
+    public void setImagePathText(String path) { imagePathLabel.setText(path); }
+    public int getImageWidth() { return (int) widthSpinner.getValue(); }
+    public void setImageWidth(int w) { widthSpinner.setValue(w); }
 
-    public void addExportListener(ActionListener listener) {
-        exportButton.addActionListener(listener);
-    }
+    public int getImageHeight() { return (int) heightSpinner.getValue(); }
+    public void setImageHeight(int h) { heightSpinner.setValue(h); }
 
-    public void addSelectImageListener(ActionListener listener) {
-        selectImageButton.addActionListener(listener);
-    }
+    public int getImageAlignment() { return alignComboBox.getSelectedIndex(); }
+    public void setImageAlignment(int idx) { alignComboBox.setSelectedIndex(idx); }
 
-    public void setImagePathText(String path) {
-        imagePathLabel.setText(path);
-    }
+    public void addGenerateListener(ActionListener l) { generateButton.addActionListener(l); }
+    public void addExportListener(ActionListener l) { exportButton.addActionListener(l); }
+    public void addSelectImageListener(ActionListener l) { selectImageButton.addActionListener(l); }
 
-    public int getImageWidth() {
-        return (int) widthSpinner.getValue();
-    }
-
-    public int getImageHeight() {
-        return (int) heightSpinner.getValue();
-    }
-
-    public int getImageAlignment() {
-        return alignComboBox.getSelectedIndex(); // 0: Gauche, 1: Centre, 2: Droite
-    }
+    public void addSauvegarderProjetListener(ActionListener l) { itemSauvegarderProjet.addActionListener(l); }
+    public void addChargerProjetListener(ActionListener l) { itemChargerProjet.addActionListener(l); }
+    public void addSauvegarderProfilListener(ActionListener l) { itemSauvegarderProfil.addActionListener(l); }
+    public void addChargerProfilListener(ActionListener l) { itemChargerProfil.addActionListener(l); }
 
     public void setStatusMessage(String message) {
         qrCodeDisplayLabel.setIcon(null);
